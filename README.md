@@ -93,8 +93,11 @@ Edit `topology.yml`. The shipped example uses RFC 5737 documentation IPs (`192.0
 The shortcut — install deps, start the stack, prompt for confirmation, run the full pipeline:
 
 ```bash
-./start.sh
+./start.sh                    # real certs
+INSECURE=1 ./start.sh         # self-signed lab certs
 ```
+
+`start.sh` auto-activates `.venv/` if present.
 
 Or run the orchestrator directly:
 
@@ -127,6 +130,8 @@ All connection details are read from environment variables (or a `.env` file via
 | `SECRET_KEY` | Django secret for the NetBox container |
 | `POSTGRES_PASSWORD` | Postgres password for the NetBox container |
 | `SUPERUSER_*` | NetBox initial superuser bootstrap |
+| `INSECURE` | Set to `1` to make `start.sh` pass `--insecure` (skip TLS verification) |
+| `DEVICE_BOOT_TIMEOUT` | Per-device SSH-reachability timeout in seconds (default `300`) |
 
 See `.env.example` for the complete list.
 
@@ -199,7 +204,15 @@ device_defaults:
 
 1. Add vSRX or vQFX to EVE-NG: `/opt/unetlab/addons/qemu/vsrx-XX.X/`
 2. `/opt/unetlab/wrappers/unl_wrapper -a fixpermissions`
-3. Extend `topology.yml`:
+3. Generate a SHA-512 password hash and add it to `device_defaults` in `topology.yml` — Junos rejects plaintext in `encrypted-password`:
+   ```bash
+   openssl passwd -6 'automation123'
+   ```
+   ```yaml
+   device_defaults:
+     password_hash: "$6$rounds=...$..."
+   ```
+4. Extend `topology.yml`:
 
 ```yaml
 device_types:

@@ -18,7 +18,6 @@ Usage:
 import argparse
 import os
 import sys
-import time
 from pathlib import Path
 
 import yaml
@@ -268,11 +267,8 @@ def configure_devices(netbox_url: str, netbox_token: str, topology: dict,
     config_gen = ConfigGenerator(topology)
     configurator = DeviceConfigurator()
 
-    # Get devices from NetBox
     devices = netbox.get_devices()
-
-    console.print("[dim]Waiting 60 seconds for devices to boot...[/dim]")
-    time.sleep(60)
+    boot_timeout = int(os.environ.get("DEVICE_BOOT_TIMEOUT", "300"))
 
     with Progress(
             SpinnerColumn(),
@@ -282,19 +278,14 @@ def configure_devices(netbox_url: str, netbox_token: str, topology: dict,
         for device in devices:
             task = progress.add_task(f"Configuring {device['name']}...", total=None)
 
-            # Resolve vendor from the device's manufacturer (defaults to cisco)
             device_type = device.get("device_type") or {}
             manufacturer = device_type.get("manufacturer") or {}
             vendor = manufacturer.get("slug", "cisco") if isinstance(manufacturer, dict) else "cisco"
             netmiko_type = vendor_to_netmiko_type(vendor)
 
-            # Get interfaces and IPs for this device
             interfaces = netbox.get_device_interfaces(device["name"])
-
-            # Generate vendor-specific configuration
             config = config_gen.generate_config(device, interfaces, vendor=vendor)
 
-            # Get management IP
             mgmt_ip = None
             for iface in interfaces:
                 if iface.get("description") == "Management":
@@ -303,20 +294,26 @@ def configure_devices(netbox_url: str, netbox_token: str, topology: dict,
                         mgmt_ip = ip_addr.split("/")[0]
                         break
 
-            if mgmt_ip:
-                try:
-                    configurator.push_config(
-                        host=mgmt_ip,
-                        username=topology["device_defaults"]["username"],
-                        password=topology["device_defaults"]["password"],
-                        config=config,
-                        device_type=netmiko_type,
-                    )
-                    progress.update(task, description=f"✅ {device['name']} configured ({netmiko_type})")
-                except Exception as e:
-                    progress.update(task, description=f"❌ {device['name']} failed: {e}")
-            else:
+            if not mgmt_ip:
                 progress.update(task, description=f"⚠️  {device['name']} - no management IP")
+                continue
+
+            progress.update(task, description=f"Waiting for {device['name']} ({mgmt_ip}) on SSH...")
+            if not configurator.wait_for_device(mgmt_ip, timeout=boot_timeout):
+                progress.update(task, description=f"❌ {device['name']} unreachable after {boot_timeout}s")
+                continue
+
+            try:
+                configurator.push_config(
+                    host=mgmt_ip,
+                    username=topology["device_defaults"]["username"],
+                    password=topology["device_defaults"]["password"],
+                    config=config,
+                    device_type=netmiko_type,
+                )
+                progress.update(task, description=f"✅ {device['name']} configured ({netmiko_type})")
+            except Exception as e:
+                progress.update(task, description=f"❌ {device['name']} failed: {type(e).__name__}")
 
     console.print("\n[bold yellow]✅ Device configuration complete![/bold yellow]")
 

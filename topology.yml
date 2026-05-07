@@ -163,6 +163,10 @@ device_defaults:
   username: "admin"
   password: "automation123"
   enable_secret: "automation123"
+  # Required only for Juniper templates. Junos does not accept plaintext
+  # passwords in encrypted-password. Generate with:
+  #   openssl passwd -6 'automation123'
+  # password_hash: "$6$..."
   ssh_enabled: true
   netconf_enabled: true
   ntp_server: "192.0.2.1"

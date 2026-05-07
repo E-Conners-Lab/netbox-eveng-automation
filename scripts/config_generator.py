@@ -71,17 +71,23 @@ JUNIPER_TEMPLATE = """
 system {
     host-name {{ device.name }};
     domain-name {{ defaults.domain }};
+{% if defaults.password_hash %}
     root-authentication {
-        encrypted-password "{{ defaults.password }}";
+        encrypted-password "{{ defaults.password_hash }}";
     }
     login {
         user {{ defaults.username }} {
             class super-user;
             authentication {
-                encrypted-password "{{ defaults.password }}";
+                encrypted-password "{{ defaults.password_hash }}";
             }
         }
     }
+{% else %}
+    /* Skipping root/user auth: device_defaults.password_hash not set.
+       Junos does not accept plaintext in encrypted-password. Generate a
+       hash with: openssl passwd -6 'your-password' */
+{% endif %}
     services {
 {% if defaults.ssh_enabled %}
         ssh;

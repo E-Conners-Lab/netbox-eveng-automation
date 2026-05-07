@@ -36,6 +36,14 @@ set -a
 . ./.env
 set +a
 
+# Auto-activate .venv if it exists and we're not already in one
+if [ -z "${VIRTUAL_ENV:-}" ] && [ -f .venv/bin/activate ]; then
+    # shellcheck source=/dev/null
+    . .venv/bin/activate
+elif [ -z "${VIRTUAL_ENV:-}" ]; then
+    echo -e "${YELLOW}Warning: no virtualenv detected. Create one with 'python -m venv .venv' first or pip will install into your system Python.${NC}"
+fi
+
 if ! command -v docker &> /dev/null; then
     echo -e "${RED}Error: Docker is not installed${NC}"
     exit 1
@@ -105,7 +113,10 @@ fi
 
 echo
 echo -e "${GREEN}[4/4] Running full automation pipeline...${NC}"
-python3 orchestrator.py --full --insecure
+# Pass --insecure only when INSECURE is set in the environment (lab self-signed certs).
+INSECURE_FLAG="${INSECURE:+--insecure}"
+# shellcheck disable=SC2086
+python3 orchestrator.py --full $INSECURE_FLAG
 
 echo
 echo -e "${GREEN}╔══════════════════════════════════════════════════════════╗${NC}"
