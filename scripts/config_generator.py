@@ -259,21 +259,22 @@ class ConfigGenerator:
 
             interface_data.append(iface_info)
 
-        # Get gateway from management network
+        # Build a per-render defaults dict so we don't mutate self.defaults
+        # across calls.
         mgmt_net = self.topology.get("management_network", {})
-        self.defaults["gateway"] = mgmt_net.get("gateway", "192.0.2.1")
+        render_defaults = {
+            **self.defaults,
+            "gateway": self.defaults.get("gateway") or mgmt_net.get("gateway", "192.0.2.1"),
+        }
 
-        # Render template
         template_str = self.get_template(vendor)
         template = self.env.from_string(template_str)
 
-        config = template.render(
+        return template.render(
             device=device,
             interfaces=interface_data,
-            defaults=self.defaults
+            defaults=render_defaults,
         )
-
-        return config
 
     def generate_all_configs(self, devices: list,
                              interfaces_by_device: dict) -> dict:

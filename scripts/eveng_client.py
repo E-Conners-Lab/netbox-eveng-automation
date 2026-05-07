@@ -11,6 +11,7 @@ Handles all interactions with EVE-NG for:
 """
 
 import re
+from typing import Optional
 import requests
 from rich.console import Console
 
@@ -117,7 +118,7 @@ class EVENGClient:
 
     def create_network(self, lab_path: str, name: str,
                        network_type: str = "bridge",
-                       left: int = 50, top: int = 50) -> str:
+                       left: int = 50, top: int = 50) -> Optional[str]:
         """Create a network in a lab."""
         # Open lab first
         self.open_lab(lab_path)
@@ -143,7 +144,7 @@ class EVENGClient:
     def create_node(self, lab_path: str, name: str, template: str,
                     left: int = 50, top: int = 50,
                     cpu: int = 1, ram: int = 512,
-                    ethernet: int = 4) -> str:
+                    ethernet: int = 4) -> Optional[str]:
         """Create a node in a lab."""
         # Open lab first
         self.open_lab(lab_path)
@@ -176,7 +177,7 @@ class EVENGClient:
         console.print(f"[red]Node creation failed: {result}[/red]")
         return None
 
-    def get_node_interfaces(self, lab_path: str, node_id: str) -> list:
+    def get_node_interfaces(self, lab_path: str, node_id: str) -> dict:
         """Get interfaces for a node."""
         result = self._request(
             "GET",

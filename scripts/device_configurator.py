@@ -105,9 +105,9 @@ class DeviceConfigurator:
             console.print(f"[red]Authentication failed for {host}[/red]")
             return False
         except Exception as e:
-            console.print(f"[red]Error configuring {host}: {e}[/red]")
+            console.print(f"[red]Error configuring {host}: {type(e).__name__}[/red]")
             return False
-    
+
     def push_config_netconf(self, host: str, username: str, password: str,
                             config: str, port: int = 830,
                             hostkey_verify: bool = True) -> bool:
@@ -150,7 +150,7 @@ class DeviceConfigurator:
             console.print(f"[red]NETCONF RPC error for {host}: {e}[/red]")
             return False
         except Exception as e:
-            console.print(f"[red]NETCONF error for {host}: {e}[/red]")
+            console.print(f"[red]NETCONF error for {host}: {type(e).__name__}[/red]")
             return False
     
     def get_running_config(self, host: str, username: str, password: str,
@@ -170,7 +170,7 @@ class DeviceConfigurator:
             connection.disconnect()
             return config
         except Exception as e:
-            console.print(f"[red]Error getting config from {host}: {e}[/red]")
+            console.print(f"[red]Error getting config from {host}: {type(e).__name__}[/red]")
             return None
     
     def verify_connectivity(self, host: str, username: str, password: str,
@@ -208,66 +208,5 @@ class DeviceConfigurator:
             connection.disconnect()
             return output
         except Exception as e:
-            console.print(f"[red]Error running command on {host}: {e}[/red]")
+            console.print(f"[red]Error running command on {host}: {type(e).__name__}[/red]")
             return None
-
-
-class BulkConfigurator:
-    """Configure multiple devices in parallel or sequence."""
-    
-    def __init__(self, configurator: DeviceConfigurator):
-        self.configurator = configurator
-    
-    def configure_all(self, devices: list, configs: dict,
-                      username: str, password: str,
-                      sequential: bool = True) -> dict:
-        """Configure all devices."""
-        results = {}
-        
-        for device in devices:
-            name = device["name"]
-            config = configs.get(name)
-            
-            if not config:
-                console.print(f"[yellow]No config for {name}, skipping[/yellow]")
-                results[name] = False
-                continue
-            
-            # Get management IP
-            mgmt_ip = None
-            if device.get("primary_ip4"):
-                mgmt_ip = str(device["primary_ip4"]["address"]).split("/")[0]
-            
-            if not mgmt_ip:
-                console.print(f"[yellow]No management IP for {name}, skipping[/yellow]")
-                results[name] = False
-                continue
-            
-            # Wait for device to be ready
-            if not self.configurator.wait_for_device(mgmt_ip, timeout=180):
-                console.print(f"[red]Device {name} not reachable[/red]")
-                results[name] = False
-                continue
-            
-            # Determine device type for netmiko
-            device_type = self._get_netmiko_device_type(device)
-            
-            # Push config
-            success = self.configurator.push_config(
-                host=mgmt_ip,
-                username=username,
-                password=password,
-                config=config,
-                device_type=device_type
-            )
-            
-            results[name] = success
-        
-        return results
-    
-    def _get_netmiko_device_type(self, device: dict) -> str:
-        """Map device manufacturer to Netmiko device type."""
-        device_type = device.get("device_type", {})
-        manufacturer = device_type.get("manufacturer", {})
-        vendor = manufacturer.get("slug", "cisco")
-        return vendor_to_netmiko_type(vendor)

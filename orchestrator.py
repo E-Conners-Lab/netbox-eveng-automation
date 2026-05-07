@@ -31,8 +31,6 @@ from scripts.eveng_client import EVENGClient
 from scripts.config_generator import ConfigGenerator
 from scripts.device_configurator import DeviceConfigurator, vendor_to_netmiko_type
 
-load_dotenv()
-
 console = Console()
 
 
@@ -229,7 +227,6 @@ def provision_eveng(netbox_url: str, netbox_token: str,
         progress.update(task, description="✅ Management connections complete")
 
         # Create direct connections between nodes
-        # Create direct connections between nodes
         task = progress.add_task("Creating inter-node connections...", total=None)
 
         # Use topology definition directly instead of NetBox cables
@@ -319,6 +316,10 @@ def configure_devices(netbox_url: str, netbox_token: str, topology: dict,
 
 
 def main():
+    # Load .env at CLI invocation time, not at import time, so tests/library
+    # callers don't get os.environ silently mutated by a stray .env on disk.
+    load_dotenv()
+
     parser = argparse.ArgumentParser(
         description="NetBox-EVE-NG Automation Orchestrator"
     )

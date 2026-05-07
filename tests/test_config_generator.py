@@ -106,3 +106,11 @@ class TestGenerateConfig:
         device = {"name": "R1"}
         config = generator.generate_config(device, [], vendor="mystery-vendor")
         assert "hostname R1" in config
+
+    def test_does_not_mutate_defaults_across_calls(
+        self, generator: ConfigGenerator
+    ) -> None:
+        defaults_before = dict(generator.defaults)
+        generator.generate_config({"name": "R1"}, [], vendor="cisco")
+        generator.generate_config({"name": "R2"}, [], vendor="juniper")
+        assert generator.defaults == defaults_before

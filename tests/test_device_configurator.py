@@ -4,8 +4,6 @@ import pytest
 
 from scripts.device_configurator import (
     VENDOR_TO_NETMIKO,
-    BulkConfigurator,
-    DeviceConfigurator,
     vendor_to_netmiko_type,
 )
 
@@ -30,27 +28,3 @@ class TestVendorToNetmikoType:
     def test_mapping_constant_matches_helper(self) -> None:
         for vendor, netmiko_type in VENDOR_TO_NETMIKO.items():
             assert vendor_to_netmiko_type(vendor) == netmiko_type
-
-
-@pytest.mark.unit
-class TestBulkConfiguratorVendorMapping:
-    """BulkConfigurator should resolve netmiko types from NetBox-shaped dicts."""
-
-    def test_resolves_cisco_from_nested_manufacturer(self) -> None:
-        bulk = BulkConfigurator(DeviceConfigurator())
-        device = {"device_type": {"manufacturer": {"slug": "cisco"}}}
-        assert bulk._get_netmiko_device_type(device) == "cisco_ios"
-
-    def test_resolves_juniper_from_nested_manufacturer(self) -> None:
-        bulk = BulkConfigurator(DeviceConfigurator())
-        device = {"device_type": {"manufacturer": {"slug": "juniper"}}}
-        assert bulk._get_netmiko_device_type(device) == "juniper_junos"
-
-    def test_resolves_arista_from_nested_manufacturer(self) -> None:
-        bulk = BulkConfigurator(DeviceConfigurator())
-        device = {"device_type": {"manufacturer": {"slug": "arista"}}}
-        assert bulk._get_netmiko_device_type(device) == "arista_eos"
-
-    def test_defaults_to_cisco_when_manufacturer_missing(self) -> None:
-        bulk = BulkConfigurator(DeviceConfigurator())
-        assert bulk._get_netmiko_device_type({}) == "cisco_ios"
