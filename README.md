@@ -139,18 +139,23 @@ See `.env.example` for the complete list.
 
 ```
 netbox-eveng-automation/
-├── docker-compose.yml      # NetBox stack (Postgres + Redis + workers)
-├── .env.example            # Template — copy to .env
-├── requirements.txt        # Pinned Python dependencies
-├── topology.yml            # Your network definition
-├── orchestrator.py         # CLI entry point
+├── docker-compose.yml         # NetBox stack (Postgres + Redis + workers)
+├── .env.example               # Template — copy to .env
+├── requirements.txt           # Pinned production dependencies
+├── requirements-dev.txt       # Adds pytest, pytest-cov, pip-audit
+├── pytest.ini                 # Test runner config
+├── topology.yml               # Your network definition
+├── orchestrator.py            # CLI entry point
+├── start.sh                   # Bootstrap shortcut (.venv-aware)
 ├── scripts/
-│   ├── netbox_client.py    # NetBox API wrapper
-│   ├── eveng_client.py     # EVE-NG API wrapper
-│   ├── config_generator.py # Jinja2 config rendering
-│   └── device_configurator.py  # Push configs over SSH/NETCONF
-├── templates/              # Optional override Jinja2 templates
-└── configs/                # Generated configs (gitignored)
+│   ├── netbox_client.py       # NetBox API wrapper
+│   ├── eveng_client.py        # EVE-NG API wrapper
+│   ├── config_generator.py    # Jinja2 config rendering
+│   └── device_configurator.py # Push configs over SSH/NETCONF
+├── tests/                     # pytest suite
+├── templates/                 # Optional override Jinja2 templates
+├── configs/                   # Generated configs (gitignored)
+└── .github/workflows/ci.yml   # pytest + pip-audit on every push/PR
 ```
 
 ## Topology YAML reference
@@ -315,7 +320,7 @@ docker compose restart netbox
 
 ### Device config failures
 
-- Increase boot wait if devices are slow.
+- Slow boot? Bump `DEVICE_BOOT_TIMEOUT` (default `300` seconds, per device). E.g. `DEVICE_BOOT_TIMEOUT=600 ./start.sh` or set it in `.env`.
 - Confirm management IPs match `topology.yml`.
 - Verify SSH is enabled in the base image.
 
