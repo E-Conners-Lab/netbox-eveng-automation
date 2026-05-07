@@ -34,9 +34,15 @@ A Python automation framework that uses **NetBox as the source of truth** to pro
 
 ## Prerequisites
 
+### On your workstation
 - Docker + Docker Compose
 - Python 3.10+
-- A reachable EVE-NG instance (community or pro)
+
+### On your EVE-NG host
+- A reachable EVE-NG instance (community or pro), API enabled.
+- A `pnet0` cloud bridge wired to whichever LAN your devices' management IPs live on (default behaviour for community ISO; verify with `cat /etc/network/interfaces`).
+- The QEMU image referenced by your `device_types` already installed under `/opt/unetlab/addons/qemu/`, then run `/opt/unetlab/wrappers/unl_wrapper -a fixpermissions`. The shipped `topology.yml` uses Cisco vIOS (`vios-adventerprisek9-m.vmdk.SPA.157-3.M3`) — Cisco IOS images are licensed and not redistributed with this project.
+- An empty lab created in the EVE-NG UI whose name matches `lab.name` in `topology.yml` (default: `Automation lab`). The orchestrator opens an existing lab; it does not create one.
 
 ## Quick start
 
@@ -45,6 +51,8 @@ A Python automation framework that uses **NetBox as the source of truth** to pro
 ```bash
 git clone https://github.com/<you>/netbox-eveng-automation.git
 cd netbox-eveng-automation
+python -m venv .venv
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
@@ -52,31 +60,41 @@ pip install -r requirements.txt
 
 ```bash
 cp .env.example .env
-$EDITOR .env
 ```
 
-Generate fresh values for `SECRET_KEY` and `SUPERUSER_API_TOKEN`:
+Generate a real Django secret and a real NetBox API token:
 
 ```bash
 python -c "import secrets; print('SECRET_KEY=' + secrets.token_urlsafe(50))"
 python -c "import secrets; print('SUPERUSER_API_TOKEN=' + secrets.token_hex(20))"
 ```
 
+Paste both into `.env`. Then **set `NETBOX_TOKEN` to the same value as `SUPERUSER_API_TOKEN`** — NetBox provisions the superuser's first API token from `SUPERUSER_API_TOKEN`, and the orchestrator authenticates with `NETBOX_TOKEN`. They must match (or you can generate a separate token in the NetBox UI later and use that).
+
+Fill in the rest: passwords, `EVENG_HOST/USER/PASS`, `ALLOWED_HOSTS` if accessing NetBox from anywhere besides `localhost`.
+
 ### 3. Start NetBox
 
 ```bash
 docker compose up -d
+docker compose logs -f netbox      # Ctrl+C once you see "Listening at: http://0.0.0.0:8080"
 ```
 
-Wait 2-3 minutes for NetBox to initialize, then visit `http://localhost:8000` and log in with the credentials from your `.env`.
+The first boot runs migrations and creates the superuser — usually 2-3 minutes. Visit `http://localhost:8000` and log in with `SUPERUSER_NAME` / `SUPERUSER_PASSWORD` from your `.env`.
 
 ### 4. Define your topology
 
-Edit `topology.yml`. The shipped example uses RFC 5737 documentation IPs (`192.0.2.0/24`); change `management_network.gateway`, the per-device management IPs, and the `ntp_server` to match your real lab network.
+Edit `topology.yml`. The shipped example uses RFC 5737 documentation IPs (`192.0.2.0/24`); change `management_network.gateway`, the per-device management IPs, and `ntp_server` to match your real lab network. Make sure `lab.name` matches the empty lab you created in EVE-NG.
 
 ### 5. Run the orchestrator
 
-Full pipeline:
+The shortcut — install deps, start the stack, prompt for confirmation, run the full pipeline:
+
+```bash
+./start.sh
+```
+
+Or run the orchestrator directly:
 
 ```bash
 python orchestrator.py --full --insecure
@@ -260,6 +278,14 @@ docker compose restart netbox
 - Increase boot wait if devices are slow.
 - Confirm management IPs match `topology.yml`.
 - Verify SSH is enabled in the base image.
+
+### EVE-NG provisioning fails to find the lab
+
+The orchestrator opens an existing lab named `<lab.name>.unl`. Create the lab manually in the EVE-NG UI (File → New Lab) with the exact name from `topology.yml`, then re-run.
+
+### NetBox API returns 401
+
+`NETBOX_TOKEN` likely doesn't match the token NetBox actually issued. Either set it equal to `SUPERUSER_API_TOKEN`, or generate a fresh token under your user profile in NetBox and paste it into `.env`.
 
 ## Roadmap
 
