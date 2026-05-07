@@ -1,0 +1,9 @@
+pynetbox==7.5.0
+requests==2.32.5
+urllib3==2.5.0
+python-dotenv==1.0.1
+jinja2==3.1.6
+netmiko==4.6.0
+ncclient==0.7.0
+pyyaml==6.0.3
+rich==14.2.0

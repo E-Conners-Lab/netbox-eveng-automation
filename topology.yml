@@ -1,0 +1,168 @@
+# Phase 1 Automation Foundations Lab Topology
+# This file defines the desired state - NetBox will be populated with this data
+# Then EVE-NG will be provisioned to match
+
+lab:
+  name: "Automation lab"
+  description: "Multi-vendor automation lab for learning NETCONF/YANG, Ansible, and Python"
+  author: "Automation Learning Path"
+
+site:
+  name: "Automation-Lab"
+  slug: "automation-lab"
+  description: "EVE-NG virtual network lab"
+
+device_roles:
+  - name: "Router"
+    slug: "router"
+    color: "2196f3"
+  - name: "Switch"
+    slug: "switch"
+    color: "4caf50"
+  - name: "Firewall"
+    slug: "firewall"
+    color: "f44336"
+
+manufacturers:
+  - name: "Cisco"
+    slug: "cisco"
+  - name: "Juniper"
+    slug: "juniper"
+  - name: "Arista"
+    slug: "arista"
+
+device_types:
+  - manufacturer: "cisco"
+    model: "vIOS"
+    slug: "vios"
+    eveng_template: "vios"
+    eveng_image: "vios-adventerprisek9-m.vmdk.SPA.157-3.M3"
+    interfaces:
+      - name: "GigabitEthernet0/0"
+        type: "1000base-t"
+      - name: "GigabitEthernet0/1"
+        type: "1000base-t"
+      - name: "GigabitEthernet0/2"
+        type: "1000base-t"
+      - name: "GigabitEthernet0/3"
+        type: "1000base-t"
+
+  - manufacturer: "cisco"
+    model: "CSR1000v"
+    slug: "csr1000v"
+    eveng_template: "csr1000vng"
+    eveng_image: "csr1000vng-universalk9.17.03.08a-CML"
+    interfaces:
+      - name: "GigabitEthernet1"
+        type: "1000base-t"
+      - name: "GigabitEthernet2"
+        type: "1000base-t"
+      - name: "GigabitEthernet3"
+        type: "1000base-t"
+      - name: "GigabitEthernet4"
+        type: "1000base-t"
+
+devices:
+  - name: "R1-CISCO"
+    role: "router"
+    device_type: "vios"
+    site: "automation-lab"
+    position:
+      left: 20
+      top: 30
+    interfaces:
+      - name: "GigabitEthernet0/0"
+        description: "Management"
+        ip_address: "192.0.2.101/24"
+        enabled: true
+        mgmt: true
+      - name: "GigabitEthernet0/1"
+        description: "To R2"
+        ip_address: "10.1.12.1/30"
+        enabled: true
+      - name: "GigabitEthernet0/2"
+        description: "To R3"
+        ip_address: "10.1.13.1/30"
+        enabled: true
+
+  - name: "R2-CISCO"
+    role: "router"
+    device_type: "vios"
+    site: "automation-lab"
+    position:
+      left: 80
+      top: 30
+    interfaces:
+      - name: "GigabitEthernet0/0"
+        description: "Management"
+        ip_address: "192.0.2.102/24"
+        enabled: true
+        mgmt: true
+      - name: "GigabitEthernet0/1"
+        description: "To R1"
+        ip_address: "10.1.12.2/30"
+        enabled: true
+      - name: "GigabitEthernet0/2"
+        description: "To R3"
+        ip_address: "10.1.23.1/30"
+        enabled: true
+
+  - name: "R3-CISCO"
+    role: "router"
+    device_type: "vios"
+    site: "automation-lab"
+    position:
+      left: 50
+      top: 70
+    interfaces:
+      - name: "GigabitEthernet0/0"
+        description: "Management"
+        ip_address: "192.0.2.103/24"
+        enabled: true
+        mgmt: true
+      - name: "GigabitEthernet0/1"
+        description: "To R2"
+        ip_address: "10.1.23.2/30"
+        enabled: true
+      - name: "GigabitEthernet0/2"
+        description: "To R1"
+        ip_address: "10.1.13.2/30"
+        enabled: true
+
+# Direct cable connections between devices
+cables:
+  - a_device: "R1-CISCO"
+    a_interface: "GigabitEthernet0/1"
+    b_device: "R2-CISCO"
+    b_interface: "GigabitEthernet0/1"
+    description: "R1 to R2 link"
+
+  - a_device: "R2-CISCO"
+    a_interface: "GigabitEthernet0/2"
+    b_device: "R3-CISCO"
+    b_interface: "GigabitEthernet0/1"
+    description: "R2 to R3 link"
+
+  - a_device: "R3-CISCO"
+    a_interface: "GigabitEthernet0/2"
+    b_device: "R1-CISCO"
+    b_interface: "GigabitEthernet0/2"
+    description: "R3 to R1 link"
+
+# Management network (EVE-NG pnet0)
+management_network:
+  name: "MGMT-NET"
+  type: "pnet0"
+  gateway: "192.0.2.1"
+  dns: "192.0.2.1"
+
+# Common device settings
+# NOTE: lab-only credentials. Override before connecting any real device.
+device_defaults:
+  domain: "automation.lab"
+  username: "admin"
+  password: "automation123"
+  enable_secret: "automation123"
+  ssh_enabled: true
+  netconf_enabled: true
+  ntp_server: "192.0.2.1"
