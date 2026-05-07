@@ -30,7 +30,7 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 from scripts.netbox_client import NetBoxClient
 from scripts.eveng_client import EVENGClient
 from scripts.config_generator import ConfigGenerator
-from scripts.device_configurator import DeviceConfigurator
+from scripts.device_configurator import DeviceConfigurator, vendor_to_netmiko_type
 
 load_dotenv()
 
@@ -282,11 +282,17 @@ def configure_devices(netbox_url: str, netbox_token: str, topology: dict,
         for device in devices:
             task = progress.add_task(f"Configuring {device['name']}...", total=None)
 
+            # Resolve vendor from the device's manufacturer (defaults to cisco)
+            device_type = device.get("device_type") or {}
+            manufacturer = device_type.get("manufacturer") or {}
+            vendor = manufacturer.get("slug", "cisco") if isinstance(manufacturer, dict) else "cisco"
+            netmiko_type = vendor_to_netmiko_type(vendor)
+
             # Get interfaces and IPs for this device
             interfaces = netbox.get_device_interfaces(device["name"])
 
-            # Generate configuration
-            config = config_gen.generate_config(device, interfaces)
+            # Generate vendor-specific configuration
+            config = config_gen.generate_config(device, interfaces, vendor=vendor)
 
             # Get management IP
             mgmt_ip = None
@@ -298,16 +304,15 @@ def configure_devices(netbox_url: str, netbox_token: str, topology: dict,
                         break
 
             if mgmt_ip:
-                # Push configuration
                 try:
                     configurator.push_config(
                         host=mgmt_ip,
                         username=topology["device_defaults"]["username"],
                         password=topology["device_defaults"]["password"],
                         config=config,
-                        device_type="cisco_ios"
+                        device_type=netmiko_type,
                     )
-                    progress.update(task, description=f"✅ {device['name']} configured")
+                    progress.update(task, description=f"✅ {device['name']} configured ({netmiko_type})")
                 except Exception as e:
                     progress.update(task, description=f"❌ {device['name']} failed: {e}")
             else:

@@ -27,6 +27,12 @@ class TestGetInterfaceId:
             ("eth0", "0"),
             ("eth7", "7"),
             ("Ethernet5", "5"),
+            # Juniper-style names
+            ("ge-0/0/0", "0"),
+            ("ge-0/0/3", "3"),
+            ("xe-0/0/1", "1"),
+            ("et-0/0/2", "2"),
+            ("fe-0/0/4", "4"),
         ],
     )
     def test_known_patterns(

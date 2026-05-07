@@ -17,6 +17,18 @@ from rich.console import Console
 console = Console()
 
 
+VENDOR_TO_NETMIKO: dict[str, str] = {
+    "cisco": "cisco_ios",
+    "juniper": "juniper_junos",
+    "arista": "arista_eos",
+}
+
+
+def vendor_to_netmiko_type(vendor: str) -> str:
+    """Map a manufacturer slug to a Netmiko device_type. Falls back to cisco_ios."""
+    return VENDOR_TO_NETMIKO.get(vendor, "cisco_ios")
+
+
 class DeviceConfigurator:
     """Push configurations to network devices."""
     
@@ -258,11 +270,4 @@ class BulkConfigurator:
         device_type = device.get("device_type", {})
         manufacturer = device_type.get("manufacturer", {})
         vendor = manufacturer.get("slug", "cisco")
-        
-        mapping = {
-            "cisco": "cisco_ios",
-            "juniper": "juniper_junos",
-            "arista": "arista_eos",
-        }
-        
-        return mapping.get(vendor, "cisco_ios")
+        return vendor_to_netmiko_type(vendor)

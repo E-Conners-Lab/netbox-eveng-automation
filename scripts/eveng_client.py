@@ -242,8 +242,10 @@ class EVENGClient:
 
     def _get_interface_id(self, interface_name: str) -> str:
         """Convert interface name to EVE-NG interface ID."""
-        # Handle common patterns
+        # Match Juniper-style names first (ge-0/0/3, xe-0/0/0, et-0/0/0,
+        # fe-0/0/0, me-0/0/0, fxp-0/0/0) and extract the port number.
         patterns = [
+            (r'(?:ge|xe|et|fe|me|fxp)-\d+/\d+/(\d+)', lambda m: m.group(1)),
             (r'GigabitEthernet0/(\d+)', lambda m: m.group(1)),
             (r'Gi0/(\d+)', lambda m: m.group(1)),
             (r'eth(\d+)', lambda m: m.group(1)),

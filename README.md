@@ -31,7 +31,7 @@ A Python automation framework that uses **NetBox as the source of truth** to pro
 - **Declarative topology**: define your network in YAML
 - **NetBox integration**: automatic population of devices, interfaces, IPs, and cables
 - **EVE-NG provisioning**: creates labs, nodes, and connections via API
-- **Config generation**: Jinja2 templates for Cisco / Juniper / Arista
+- **Multi-vendor**: Cisco IOS, Juniper Junos, and Arista EOS — vendor is resolved from NetBox and used to pick the right Jinja template and Netmiko driver
 - **Config deployment**: pushes configs via SSH (Netmiko) or NETCONF (ncclient)
 
 ## Prerequisites
