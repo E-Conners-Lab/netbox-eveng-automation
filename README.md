@@ -1,5 +1,7 @@
 # NetBox-EVE-NG Automation Framework
 
+[![CI](https://github.com/E-Conners-Lab/netbox-eveng-automation/actions/workflows/ci.yml/badge.svg)](https://github.com/E-Conners-Lab/netbox-eveng-automation/actions/workflows/ci.yml)
+
 A Python automation framework that uses **NetBox as the source of truth** to provision and configure network labs in **EVE-NG**.
 
 ## Architecture
@@ -35,7 +37,7 @@ A Python automation framework that uses **NetBox as the source of truth** to pro
 ## Prerequisites
 
 ### On your workstation
-- Docker + Docker Compose
+- Docker + Docker Compose **— and the Docker daemon must be running before you start.** On macOS/Windows that means Docker Desktop is open; on Linux make sure the `docker` service is up. Verify with `docker info` — it should print system info, not an error.
 - Python 3.10+
 
 ### On your EVE-NG host
@@ -258,7 +260,32 @@ node_id = eveng.create_node(lab, "R1", "vios", left=20, top=30)
 eveng.start_all_nodes(lab)
 ```
 
+## Development
+
+### Running tests
+
+```bash
+pip install -r requirements-dev.txt
+pytest
+```
+
+With coverage:
+
+```bash
+pytest --cov=scripts --cov=orchestrator --cov-report=term-missing
+```
+
+The shipped suite covers the pure-logic helpers (config rendering filters, interface-name parsing, env-var loading). API-client paths that call NetBox / EVE-NG / Netmiko aren't covered yet — additions welcome.
+
+### CI
+
+Every push and pull request runs `pytest` against Python 3.10/3.11/3.12 and `pip-audit` against `requirements.txt`. See `.github/workflows/ci.yml`.
+
 ## Troubleshooting
+
+### `docker compose` can't connect to the daemon / `Cannot connect to the Docker daemon`
+
+The Docker daemon isn't running. Start Docker Desktop (macOS/Windows) or `sudo systemctl start docker` (Linux), then re-run `docker info` to confirm.
 
 ### NetBox not starting
 
